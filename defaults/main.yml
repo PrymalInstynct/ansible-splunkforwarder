@@ -1,0 +1,16 @@
+---
+# Install Variable
+splunk_forwarder_user: "splunk"
+splunk_forwarder_group: "splunk"
+splunk_forwarder_architecture: "x86_64"
+splunk_forwarder_platform: "linux"
+splunk_forwarder_version: "8.0.3"
+splunk_forwarder_rpm: "splunkforwarder-8.0.3-a6754d8441bf-linux-2.6-x86_64.rpm"
+splunk_forwarder_url: "https://www.splunk.com/bin/splunk/DownloadActivityServlet?architecture={{ splunk_forwarder_architecture }}&platform={{ splunk_forwarder_platform }}&version={{ splunk_forwarder_version }}&product=universalforwarder&filename={{ splunk_forwarder_rpm }}&wget=true"
+splunk_forwarder_rpm_checksum: "md5:0b5737d701eb34bf519aef905fb7b452"
+
+# Post Install Variables
+splunk_forwarder_deployment_server: "splunk01.prymal.linux:8089"
+splunk_forwarder_admin_user: "admin"
+splunk_forwarder_admin_password: "{{ vault_splunk_forwarder_admin_password }}"
+
