@@ -1,107 +1,55 @@
 ---
-- name: Download the Splunk Forwarder package
-  get_url:
-    url: "{{ splunk_forwarder_url }}"
-    dest: "/tmp/{{ splunk_forwarder_rpm }}"
-    checksum: "{{ splunk_forwarder_rpm_checksum }}"
-  when:
-    - ansible_os_family == 'RedHat'
+- name: Include Vaulted Variables
+  ansible.builtin.include_vars: "vault.yml"
 
-- name: Check for Splunk Forwarder
-  stat:
-    path: /opt/splunkforwarder
-  register: splunk_installed
+- name: Include OS family variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
 
-- name: Collect data about Old Splunk Service | Part 1 of 2
-  service_facts:
+- name: Set Splunk Forwarder Download url
+  ansible.builtin.set_fact:
+    splunk_forwarder_url: "https://download.splunk.com/products/universalforwarder/releases/{{ splunk_forwarder_version }}/{{ splunk_forwarder_platform }}/{{ splunk_forwarder_filename }}"
 
-- name: Collect data about Old Splunk Service | Part 2 of 2
-  stat:
-    path: /etc/rc.d/init.d/splunk
-  register: splunk_system5
-
-- block:
-  - name: Stop Splunk Forwarder Application
-    command: /opt/splunkforwarder/bin/splunk stop
-    ignore_errors: yes
-
-  - name: Stop Splunk Forwarder Service
-    systemd:
-      name: SplunkForwarder
-      state: stopped
-    ignore_errors: yes
-
-  - name: Clean up old splunk forwarder install | Part 1 of 2
-    yum:
-      name: splunkforwarder
-      state: absent
-
-  - name: Clean up old splunk forwarder install | Part 2 of 2
-    file:
-      path: /opt/splunkforwarder
-      state: absent
-
-  - name: Clean up old splunk forwarder system5 service file
-    file:
-     path: /etc/rc.d/init.d/splunk
-     state: absent
-
-  when: splunk_installed.stat.isdir is defined and splunk_installed.stat.isdir
-
-- name: Install Splunk Forwarder
-  yum:
-    name: "/tmp/{{ splunk_forwarder_rpm }}"
+- name: Debian | Install Splunk Forwarder
+  ansible.builtin.apt:
+    deb: "{{ splunk_forwarder_url }}"
     state: present
-    disable_gpg_check: yes
   when:
-    - ansible_os_family == 'RedHat'
+    - ansible_os_family == "Debian"
 
-- name: Remove Splunk Forwarder package
-  file:
-    path: "/tmp/{{ splunk_forwarder_rpm }}"
-    state: absent
+- name: Red Hat | Install Splunk Forwarder
+  ansible.builtin.yum:
+    name: "{{ splunk_forwarder_url }}"
+    state: present
+    disable_gpg_check: true
+  when:
+    - ansible_os_family == "RedHat"
 
 - name: Create Symlink for Splunk
-  file:
+  ansible.builtin.file:
     path: /usr/bin/splunk
     src: /opt/splunkforwarder/bin/splunk
     state: link
-    force: yes
+    force: true
 
 - name: Start the Splunk Forwarder for the first time
-  command: /opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd {{ splunk_forwarder_admin_password }}
-  when: 
-    - ansible_facts.services['SplunkForwarder.service'] is not defined and
-      not splunk_system5 | bool
+  ansible.builtin.command: /opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd {{ splunk_forwarder_admin_password }}
+
+- name: Wait for Splunk to start
+  ansible.builtin.pause:
+    seconds: 30
 
 - name: Stop the Splunk Forwarder
-  command: /opt/splunkforwarder/bin/splunk stop
-  when: ansible_facts.services['SplunkForwarder.service'] is not defined
+  ansible.builtin.command: /opt/splunkforwarder/bin/splunk stop
 
-- name: Collect data about New Splunk Service | Part 1 of 2
-  service_facts:
-
-- name: Collect data about New Splunk Service | Part 2 of 2
-  stat:
-    path: /etc/rc.d/init.d/splunk
-  register: splunk_system5
-
-- name: Remove init.d Splunk Service
-  file:
-    path: /etc/rc.d/init.d/splunk
-    state: absent
-  when: splunk_system5 | bool
-
-- name: Set the Splunk Forwarder to start on boot with Systemd
-  command: /opt/splunkforwarder/bin/splunk enable boot-start -systemd-managed 1
-  when: ansible_facts.services['SplunkForwarder.service'] is not defined
+- name: Set the Splunk Forwarder to start on boot
+  ansible.builtin.command: /opt/splunkforwarder/bin/splunk enable boot-start
 
 - name: Restart Splunk Forwarder
-  systemd:
+  ansible.builtin.systemd:
     name: SplunkForwarder
     state: restarted
-    daemon_reload: yes
-    enabled: yes
+    daemon_reload: true
+    enabled: true
 
 - name: Set the Splunk Forwarder Deployment-server
-  command: /opt/splunkforwarder/bin/splunk set deploy-poll {{ splunk_forwarder_deployment_server }} -auth {{ splunk_forwarder_admin_user }}:{{ splunk_forwarder_admin_password }}
+  ansible.builtin.command: /opt/splunkforwarder/bin/splunk set deploy-poll {{ splunk_forwarder_deployment_server }} -auth {{ splunk_forwarder_admin_user }}:{{ splunk_forwarder_admin_password }}
