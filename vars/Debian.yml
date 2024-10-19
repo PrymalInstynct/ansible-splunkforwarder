@@ -1,4 +1,0 @@
----
-splunk_forwarder_version: "9.2.0.1"
-splunk_forwarder_filename: splunkforwarder-9.2.0.1-d8ae995bf219-linux-2.6-amd64.deb
-splunk_forwarder_file_checksum: md5:7a7f7a798b1d69dcba3d222d758c9bf7

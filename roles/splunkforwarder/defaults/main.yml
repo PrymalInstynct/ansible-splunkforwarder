@@ -1,0 +1,8 @@
+---
+# Install Variable
+splunkforwarder_platform: "linux"
+
+# Post Install Variables
+splunkforwarder_deployment_server: "deploy.prymal.linux:8089"
+splunkforwarder_admin_user: "admin"
+splunkforwarder_admin_password: "{{ vault_splunkforwarder_admin_password }}"

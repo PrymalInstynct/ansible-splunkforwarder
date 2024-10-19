@@ -1,9 +1,0 @@
----
-# Install Variable
-splunk_forwarder_platform: "linux"
-splunk_forwarder_url: "https://download.splunk.com/products/universalforwarder/releases/{{ splunk_forwarder_version }}/{{ splunk_forwarder_platform }}/{{ splunk_forwarder_filename }}"
-
-# Post Install Variables
-splunk_forwarder_deployment_server: "splunk.prymal.linux:8089"
-splunk_forwarder_admin_user: "admin"
-splunk_forwarder_admin_password: "{{ vault_splunk_forwarder_admin_password }}"

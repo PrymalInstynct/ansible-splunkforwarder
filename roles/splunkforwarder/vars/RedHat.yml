@@ -1,0 +1,5 @@
+---
+splunkforwarder_version: "9.3.1"
+splunkforwarder_filename: splunkforwarder-9.3.1-0b8d769cb912.x86_64.rpm
+splunkforwarder_file_checksum: sha512:53e949d0b0ce943bbb96539024a4e7e942e212709a25d7c8e30b1f308ecbeffd8119390a44a9732834fc5ec2eff230e6892f8b0e86d1c2c0dfb61b870471189c
+splunkforwarder_url: "https://download.splunk.com/products/universalforwarder/releases/{{ splunkforwarder_version }}/{{ splunkforwarder_platform }}/{{ splunkforwarder_filename }}"

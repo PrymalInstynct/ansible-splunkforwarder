@@ -1,0 +1,6 @@
+---
+- name: Install a Splunk Forwarder
+  hosts: all
+  become: true
+  roles:
+    - { role: splunkforwarder }

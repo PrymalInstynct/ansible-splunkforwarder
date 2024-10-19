@@ -1,0 +1,71 @@
+---
+- name: Include Vaulted Variables
+  ansible.builtin.include_vars: "vault.yml"
+
+- name: Include OS family variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Debian | Install Splunk Forwarder
+  ansible.builtin.apt:
+    deb: "{{ splunkforwarder_url }}"
+    state: present
+  when:
+    - ansible_os_family == "Debian"
+
+- name: Red Hat | Install Splunk Forwarder
+  ansible.builtin.dnf:
+    name: "{{ splunkforwarder_url }}"
+    state: present
+    disable_gpg_check: true
+  when:
+    - ansible_os_family == "RedHat"
+
+- name: Create Symlink for Splunk
+  ansible.builtin.file:
+    path: /usr/bin/splunk
+    src: /opt/splunkforwarder/bin/splunk
+    state: link
+    force: true
+
+- name: Start the Splunk Forwarder for the first time
+  ansible.builtin.command: /opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd {{ splunkforwarder_admin_password }}
+  register: splunkforwarder_start_output
+  changed_when: splunkforwarder_start_output.rc != 0
+
+- name: Wait for Splunk to start
+  ansible.builtin.pause:
+    seconds: 30
+
+- name: Stop the Splunk Forwarder
+  ansible.builtin.command: /opt/splunkforwarder/bin/splunk stop
+  register: splunkforwarder_stop_output
+  changed_when: splunkforwarder_stop_output.rc != 0
+
+- name: Check is Splunk Forward is already set to boot on start
+  ansible.builtin.stat:
+    path: /etc/systemd/system/SplunkForwarder.service
+  register: splunkforwarder_service
+
+- name: Set the Splunk Forwarder to start on boot
+  ansible.builtin.command: /opt/splunkforwarder/bin/splunk enable boot-start
+  when: not splunkforwarder_service.stat.exists
+  register: splunkforwarder_service_output
+  changed_when: splunkforwarder_service_output.rc != 0
+
+- name: Restart Splunk Forwarder
+  ansible.builtin.systemd:
+    name: SplunkForwarder
+    state: restarted
+    daemon_reload: true
+    enabled: true
+
+- name: Check is Splunk Forward Deployment Server has been set
+  ansible.builtin.stat:
+    path: /opt/splunkforwarder/etc/system/local/deploymentclient.conf
+  register: splunkforwarder_deploymentclient
+
+- name: Set the Splunk Forwarder Deployment-server
+  ansible.builtin.command: "/opt/splunkforwarder/bin/splunk set deploy-poll {{ splunkforwarder_deployment_server }} -auth {{ splunkforwarder_admin_user }}:{{ splunkforwarder_admin_password }}"
+  when: not splunkforwarder_deploymentclient.stat.exists
+  register: splunkforwarder_deploy_poll_output
+  changed_when: splunkforwarder_deploy_poll_output.rc != 0
